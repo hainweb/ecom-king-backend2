@@ -1,0 +1,63 @@
+<section>
+    <div class="container">
+        {{#if orders}}
+        <h4>Ordered Items </h4>
+        <div class="container">
+            <table class="table mt-5">
+                <thead>
+
+                    <tr>
+                        <th>Name</th>
+                        <th>Mobile</th>
+                        <th>Address</th>
+                        <th>Total</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                        <th>Options</th>
+                    </tr>
+                </thead>
+                {{else}}
+                <h5>You don't have any orders </h5>
+
+                {{/if}}
+                <tbody>
+                    {{#each orders}}
+
+                    <tr>
+                        <td>{{this.deliveryDetails.name}}</td>
+                        <td>{{this.deliveryDetails.mobile}}</td>
+                        <td>{{this.deliveryDetails.address}}, {{this.deliveryDetails.pinncode}}</td>
+                        {{#if total}}
+                        <td>{{this.total}}</td>
+                        {{else}}
+                        <td>{{this.product.Price}}</td>
+                        {{/if}}
+                        <td>{{this.paymentMethod}}</td>
+                       <td id="status-{{this._id}}">{{this.status}}, {{this.status2}}, {{this.status3}}, {{this.cashadmin}}</td>
+
+                        <td>
+                            {{#if this.cashadmin}}
+                            <button id="btn-{{this._id}}" class="btn btn-dark" disabled>Completed</button>
+                            {{else if this.status3}}
+                            <button id="btn-{{this._id}}" class="btn btn-warning"
+                                onclick="addCashadmin('{{this._id}}')">Cash to admin</button>
+                            {{else if this.status2}}
+                            <button id="btn-{{this._id}}" class="btn btn-success"
+                                onclick="addDelivering('{{this._id}}')">Delivery</button>
+                            {{else}}
+                            <button id="btn-{{this._id}}" class="btn btn-primary"
+                                onclick="addShipping('{{this._id}}')">Shipped</button>
+                            {{/if}}
+
+                        </td>
+
+                    </tr>
+
+                    {{/each}}
+                </tbody>
+            </table>
+
+
+        </div>
+    </div>
+</section>

@@ -1,0 +1,104 @@
+#!/usr/bin/env node
+
+const app = require('../app');
+const debug = require('debug')('shoppingcart2:server');
+const http = require('http');
+
+// Memory monitoring
+const monitorMemory = () => {
+  const used = process.memoryUsage();
+  console.log('Memory Usage:');
+  for (let key in used) {
+    console.log(`${key}: ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`);
+  }
+};
+
+// Set memory limits
+const v8 = require('v8');
+const totalHeapSize = v8.getHeapStatistics().total_available_size;
+const totalHeapSizeInGB = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2);
+console.log(`Total Heap Size: ${totalHeapSizeInGB} GB`);
+
+// Process error handling
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Implement graceful shutdown
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Memory warning
+process.on('warning', (warning) => {
+  console.warn(warning.name, warning.message);
+  monitorMemory();
+});
+
+const port = normalizePort(process.env.PORT || '5000');
+app.set('port', port);
+
+const server = http.createServer(app);
+
+// Graceful shutdown
+const gracefulShutdown = () => {
+  console.log('Received shutdown signal. Closing server...');
+  server.close(() => {
+    console.log('Server closed. Exiting process...');
+    process.exit(0);
+  });
+
+  // Force close if graceful shutdown fails
+  setTimeout(() => {
+    console.error('Could not close connections in time. Forcefully shutting down');
+    process.exit(1);
+  }, 10000);
+};
+
+// Handle shutdown signals
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+// Monitor memory usage every 5 minutes
+setInterval(monitorMemory, 300000);
+
+function normalizePort(val) {
+  const port = parseInt(val, 10);
+  if (isNaN(port)) return val;
+  if (port >= 0) return port;
+  return false;
+}
+
+function onError(error) {
+  if (error.syscall !== 'listen') throw error;
+
+  const bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
+
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+function onListening() {
+  const addr = server.address();
+  const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+  console.log(`Server is running on ${bind}`);
+  monitorMemory(); // Initial memory usage log
+}

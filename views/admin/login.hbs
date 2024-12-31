@@ -1,0 +1,21 @@
+<section></section>
+<div class="row">
+    <div class="col-md-6 m-auto">
+        <div class="container mt-5 ">
+
+            <form class="form-group" action="/admin/login" method="post">
+                <h4>Admin login</h4>
+                <label for="">Mobile</label>
+                <input class="form-control" type="number" name="Mobile" placeholder="Mobile">
+                <label for="">Passowrd</label>
+                <input class="form-control" type="password" name="Password" placeholder="Password">
+                {{#if info}}
+                <p style="color: red;">{{info}}</p>
+                {{/if}}
+               
+                <button class="btn btn-primary mt-3">Login</button>
+            </form>
+        </div>
+    </div>
+</div>
+</section>

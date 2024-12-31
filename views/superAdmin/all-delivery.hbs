@@ -1,0 +1,43 @@
+<section>
+  <div class="container">
+    <div class="row mt-4">
+     
+    </div>
+    <table class="table mt-5" id="allUsersTable">
+      <thead>
+        <tr>
+          <th scope="col">No</th>
+          <th scope="col">All Delivery</th>
+          <th scope="col">Mobile</th>
+         
+          <th scope="col">Details</th>
+       
+         
+        </tr>
+      </thead>
+      <tbody>
+        {{#each allDelivery}}
+       <tr>
+       <th scope="row">{{@index}}</th>
+       <td>{{this.Name}}</td>
+       <td>{{this.Mobile}}</td>
+      
+       <td>
+        <a href="/admin/allUsers-Orders/{{this._id}}" class="btn btn-primary">
+        View Delivery Products
+        </a>
+        <a href="#" class="btn btn-danger">Delete</a>
+       </td>
+       </tr>
+{{/each}}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+  $ (document).ready(function(){
+    $("#allUsersTable").DataTable();
+  })
+   
+</script>

@@ -1,0 +1,54 @@
+<header>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <!-- Brand/logo -->
+        <a class="navbar-brand" href="/">Shopping Cart</a>
+
+        <!-- Toggler button for mobile view -->
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Navbar content -->
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <!-- Left-aligned items (Cart and Orders) -->
+            <ul class="navbar-nav mr-auto">
+               
+                <li class="nav-item active">
+                    <a class="nav-link" href="/cart">Cart <span class="badge badge-dark" id="cart-count">{{cartCount}}</span></a>
+                    
+                </li>
+              {{#if user}}
+                <li class="nav-item">
+                    <a class="nav-link" href="/view-orders">Orders</a>
+                </li>
+                <li class="nav-item"></li>
+                    <a class="nav-link" href="/wishlist">Wishlist</a>
+                </li>
+                {{/if}}
+            </ul>
+
+            <!-- Right-aligned dropdown menu -->
+   
+   
+    {{#if user}}
+
+   
+    <div class="loginbutton-container"></div>
+        <a href="/logout">
+        <button class="loginbutton" > {{user.Name}} /Log Out</button>
+        </a>
+    </div>
+    {{else}}
+    <div class="loginbutton-container">
+        <a href="/login">
+        <button class="loginbutton" >Login / Sign Up</button>
+        </a>
+    </div>
+    {{/if}}
+
+      
+        </div>
+     
+    </nav>
+</header>

@@ -1,0 +1,45 @@
+<section></section>
+    <div class="container">
+{{#if orders}}
+        <h4>Ordered Items </h4>
+        <div class="container">
+            <table class="table mt-5">
+                <thead>
+
+                    <tr>
+                        <th>Date</th>
+                        <th>Address</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                {{else}}
+                <h5>You don't have any orders </h5>
+                
+                {{/if}}
+                <tbody>
+                    {{#each orders}}
+                   
+                    <tr>
+                        
+                        <td>{{this.date}}</td>
+                        
+                        <td>{{this.deliveryDetails.address}}</td>
+                        {{#if total}}
+                        <td>{{this.total}}</td>
+                        {{else}}
+                        <td>{{this.product.Price}}</td>
+                        {{/if}}
+                        <td>{{this.status}}</td>
+                       <td> <a href="/admin/user-ordered-products/{{this._id}}" class="btn btn-info">View products</a></td>
+                    
+                    </tr>
+                    
+                    {{/each}}
+                </tbody>
+            </table>
+
+
+        </div>
+    </div>
+</section>
