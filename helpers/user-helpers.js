@@ -261,7 +261,7 @@ module.exports = {
 
             }
           ).then((response) => {
-            resolve({ status: true })
+            resolve({ status: true ,message: "Product Added To Cart"})
           })
 
         }
