@@ -416,7 +416,11 @@ module.exports = {
 
             }
           ).then((response) => {
+<<<<<<< HEAD
             resolve({ status: true, message: "Product Added To Cart" })
+=======
+            resolve({ status: true ,message: "Product Added To Cart"})
+>>>>>>> 55932c36bb08a769b03883dd943fd3ebfc4ece7d
           })
 
         }

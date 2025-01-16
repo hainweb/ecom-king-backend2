@@ -2,8 +2,13 @@ const { MongoClient } = require('mongodb');
 const state = { db: null };
 
 module.exports.connect = async function (done) {
+<<<<<<< HEAD
   const url = 'mongodb://localhost:27017';
   const dbname = 'shopping2';
+=======
+  const url = 'mongodb+srv://ajinrajeshhillten:ilzSIoQy0bzlzgF2@cluster0.prb1l.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+  const dbname = 'shopping';
+>>>>>>> 55932c36bb08a769b03883dd943fd3ebfc4ece7d
 
   try {
     const client = await MongoClient.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
