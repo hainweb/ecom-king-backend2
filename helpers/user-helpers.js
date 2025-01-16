@@ -25,20 +25,47 @@ const { v4: uuidv4 } = require('uuid'); // Import UUID library for unique ID gen
 
 
 module.exports = {
-  doSignup: (userData) => {
+  doSignup: (userData, check, findUser) => {
     return new Promise(async (resolve, reject) => {
+      console.log('find', userData, findUser);
+
       let response1 = {};
       let userExists = await db.get().collection(collection.USER_COLLECTION).findOne({ Mobile: userData.Mobile });
-      if (!userExists) {
-        userData.Password = await bcrypt.hash(userData.Password, 10);  // Hash the password
-        db.get().collection(collection.USER_COLLECTION).insertOne(userData).then((data) => {
-          response1.user = userData;  // Return user data
-          response1.status = true;
+      if (check) {
+        if (userExists) {
+          response1.status = false;
+          response1.message = 'This number is already taken'
           resolve(response1);
-        });
-      } else {
-        response1.status = false;
-        resolve(response1);
+        } else {
+          response1.status = true;
+          resolve(response1)
+        }
+      }
+      else if (findUser) {
+
+        if (userExists) {
+          response1.status = true;
+          response1.user = userExists;
+          resolve(response1);
+        } else {
+          response1.status = false;
+          response1.message = `Can't find the mobile number`;
+          resolve(response1)
+        }
+
+      }
+      else {
+        if (!userExists) {
+          userData.Password = await bcrypt.hash(userData.Password, 10);  // Hash the password
+          db.get().collection(collection.USER_COLLECTION).insertOne(userData).then((data) => {
+            response1.user = userData;  // Return user data
+            response1.status = true;
+            resolve(response1);
+          });
+        } else {
+          response1.status = false;
+          resolve(response1);
+        }
       }
     });
   },
@@ -68,6 +95,134 @@ module.exports = {
       }
     })
   },
+
+  changePassword: (datas) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        console.log('Received data:', datas);
+  
+        // Find the user by ID
+        const user = await db.get().collection(collection.USER_COLLECTION).findOne({ _id: new ObjectId(datas.userId) });
+        if (!user) {
+          console.log('No user found');
+          return resolve({ status: false, message: 'No user found' });
+        }
+  
+        // Check if the password was changed within the last 3 days
+        const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000); // 3 days in milliseconds
+        if (user.passwordChangedAt && user.passwordChangedAt > threeDaysAgo) {
+          console.log('Password was changed recently');
+          return resolve({
+            status: false,
+            message: 'Password can only be changed after 3 days from the last change.'
+          });
+        }
+  
+        // Lockout check
+        if (user.failedAttempts >= 6 && user.lockUntil > Date.now()) {
+          const remainingTime = Math.ceil((user.lockUntil - Date.now()) / 1000);
+          console.log('User is locked out. Try again in', remainingTime, 'seconds');
+          return resolve({ status: false, message: `Locked out. Try again in ${remainingTime} seconds`, remainingTime });
+        }
+  
+        // Reset lockout if expired
+        if (user.lockUntil && user.lockUntil <= Date.now()) {
+          await db.get().collection(collection.USER_COLLECTION).updateOne(
+            { _id: new ObjectId(datas.userId) },
+            { $set: { failedAttempts: 0, lockUntil: null } }
+          );
+        }
+  
+        if (datas.isForgot) {
+          // Forgot password logic
+  
+          const isSameAsOldPassword = await bcrypt.compare(user.Password, user.Password);
+          if (isSameAsOldPassword) {
+            console.log('New password matches the previous password');
+            return resolve({
+              status: false,
+              message: 'New password must be different from the previous password'
+            });
+          } else {
+            const hashedPassword = await bcrypt.hash(datas.newPassword, 10);
+            await db.get().collection(collection.USER_COLLECTION).updateOne(
+              { _id: new ObjectId(datas.userId) },
+              {
+                $set: {
+                  Password: hashedPassword,
+                  failedAttempts: 0,
+                  lockUntil: null,
+                  passwordChangedAt: Date.now()  // Store the timestamp of password change
+                }
+              }
+            );
+            console.log('Password updated successfully (forgot password)');
+            return resolve({ status: true, message: 'Password updated successfully' });
+          }
+        }
+  
+        // Normal password change
+        const isPrevPasswordCorrect = await bcrypt.compare(datas.previousPassword, user.Password);
+        if (!isPrevPasswordCorrect) {
+          console.log('Previous password does not match');
+  
+          const failedAttempts = (user.failedAttempts || 0) + 1;
+          const updateData = { failedAttempts };
+          if (failedAttempts >= 6) {
+            updateData.lockUntil = Date.now() + 2 * 60 * 1000; // Lock for 2 minutes
+            console.log('User locked out for 2 minutes');
+          }
+  
+          await db.get().collection(collection.USER_COLLECTION).updateOne(
+            { _id: new ObjectId(datas.userId) },
+            { $set: updateData }
+          );
+  
+          return resolve({
+            status: false,
+            message: failedAttempts >= 6
+              ? 'Too many failed attempts. Locked out for 2 minutes'
+              : 'Previous password does not match'
+          });
+        }
+  
+        // Check if new password is the same as the old password
+        const isSameAsOldPassword = await bcrypt.compare(user.Password, user.Password);
+        if (isSameAsOldPassword) {
+          console.log('New password matches the previous password');
+          return resolve({
+            status: false,
+            message: 'New password must be different from the previous password'
+          });
+        }
+  
+        // Hash and update the new password
+        const hashedPassword = await bcrypt.hash(datas.newPassword, 10);
+        await db.get().collection(collection.USER_COLLECTION).updateOne(
+          { _id: new ObjectId(datas.userId) },
+          {
+            $set: {
+              Password: hashedPassword,
+              failedAttempts: 0,
+              lockUntil: null,
+              passwordChangedAt: Date.now()  // Store the timestamp of password change
+            }
+          }
+        );
+  
+        console.log('Password updated successfully');
+        resolve({ status: true, message: 'Password updated successfully' });
+      } catch (error) {
+        console.error('Error changing password:', error);
+        reject({ status: false, message: 'An error occurred. Please try again.' });
+      }
+    });
+  },
+  
+  
+
+
+
 
   editProfile: (userId, data) => {
     console.log('server data', data);
@@ -261,7 +416,7 @@ module.exports = {
 
             }
           ).then((response) => {
-            resolve({ status: true })
+            resolve({ status: true, message: "Product Added To Cart" })
           })
 
         }
@@ -431,7 +586,7 @@ module.exports = {
     return new Promise(async (resolve, reject) => {
       try {
         console.log(details, products, total, userId);
-  
+
         let status = details['payment-method'] === 'COD' ? 'Order placed' : 'pending';
         const date = new Date().toLocaleString("en-US", {
           year: 'numeric',
@@ -442,9 +597,9 @@ module.exports = {
           second: 'numeric',
           hour12: true
         });
-  
+
         console.log(date);
-  
+
         // Create the order object
         let orderObj = {
           deliveryDetails: {
@@ -463,10 +618,10 @@ module.exports = {
           status: status,
           date: date
         };
-  
+
         if (buyNow) {
           console.log('Processing Buy Now order for:', products.Name);
-        
+
           // Check stock availability
           if (products.Quantity === 0) {
             return resolve({
@@ -475,7 +630,7 @@ module.exports = {
               product: products._id
             });
           }
-        
+
           if (products.Quantity < products.quantity) {
             return resolve({
               status: false,
@@ -483,7 +638,7 @@ module.exports = {
               product: products._id
             });
           }
-        
+
           // Transform product data to desired format
           const transformedProducts = [{
             _id: new ObjectId(),
@@ -505,7 +660,7 @@ module.exports = {
               SellingPrice: products.SellingPrice
             }
           }];
-        
+
           // Create orderObj
           const orderObj = {
             deliveryDetails: {
@@ -522,24 +677,24 @@ module.exports = {
             products: transformedProducts,
             total: products.Price,
             status: 'pending',
-            date:date
+            date: date
           };
-        
+
           // Place the order
           const response = await db.get().collection(collection.ORDER_COLLECTION).insertOne(orderObj);
-        
+
           // Update stock quantity
           const newQuantity = products.Quantity - 1;
           await db.get().collection(collection.PRODUCT_COLLECTION).updateOne(
             { _id: new ObjectId(products._id) },
             { $set: { Quantity: newQuantity } }
           );
-        
+
           console.log(`Stock updated. New quantity: ${newQuantity}`);
           resolve({ status: true, message: 'Order placed successfully.' });
         }
-        
-         else {
+
+        else {
           console.log('Processing Cart order');
 
           let orderObj = {
@@ -558,31 +713,31 @@ module.exports = {
             total: total,
             status: status,
             date: date
-  
+
           };
-  
+
           // Check all products in the cart
           let isQuantityInsufficient = false;
           let insufficientProduct = null;
           let isStockOut = false;
           let stockOutProduct = null;
-  
+
           for (const product of products) {
             console.log('Checking product', product);
-  
+
             if (product.product.Quantity === 0) {
               isStockOut = true;
               stockOutProduct = product;
               break;
             }
-  
+
             if (product.product.Quantity < product.quantity) {
               isQuantityInsufficient = true;
               insufficientProduct = product;
               break;
             }
           }
-  
+
           if (isStockOut) {
             return resolve({
               status: false,
@@ -590,7 +745,7 @@ module.exports = {
               product: stockOutProduct.item
             });
           }
-  
+
           if (isQuantityInsufficient) {
             return resolve({
               status: false,
@@ -598,40 +753,40 @@ module.exports = {
               product: insufficientProduct.item
             });
           }
-  
+
           console.log('All cart products have sufficient quantity.');
-  
+
           // Place the order
           const response = await db.get().collection(collection.ORDER_COLLECTION).insertOne(orderObj);
-  
+
           // Update product quantities
           for (const product of products) {
             const proId = product.item;
             const orderedQuantity = product.quantity;
-  
+
             const currentProduct = await db.get()
               .collection(collection.PRODUCT_COLLECTION)
               .findOne({ _id: new ObjectId(proId) });
-  
+
             if (currentProduct) {
               const newQuantity = currentProduct.Quantity - orderedQuantity;
-  
+
               await db.get()
                 .collection(collection.PRODUCT_COLLECTION)
                 .updateOne(
                   { _id: new ObjectId(proId) },
                   { $set: { Quantity: newQuantity } }
                 );
-  
+
               console.log(`Product ${product.product.Name} quantity updated.`);
             } else {
               console.error(`Product with ID ${proId} not found.`);
             }
           }
-  
+
           // Delete the user's cart after placing the order
           await db.get().collection(collection.CART_COLLECTION).deleteOne({ user: new ObjectId(userId) });
-  
+
           return resolve({ status: true, message: 'Order placed successfully.' });
         }
       } catch (error) {
@@ -640,7 +795,7 @@ module.exports = {
     });
   },
 
-  
+
 
 
 
@@ -653,7 +808,7 @@ module.exports = {
   getOrders: (userId) => {
     return new Promise(async (resolve, reject) => {
       let orders = await db.get().collection(collection.ORDER_COLLECTION).find({ userId: new ObjectId(userId) }).toArray()
-      console.log('order sie',orders);
+      console.log('order sie', orders);
       resolve(orders)
 
     })
@@ -993,12 +1148,12 @@ module.exports = {
     });
   },
 
-  addContact:(data)=>{
-    console.log('adta ',data);
-   
-    return new Promise((resolve,reject)=>{
-      db.get().collection(collection.CONTACT_COLLECTION).insertOne(data).then(()=>{
-        resolve({status:true})
+  addContact: (data) => {
+    console.log('adta ', data);
+
+    return new Promise((resolve, reject) => {
+      db.get().collection(collection.CONTACT_COLLECTION).insertOne(data).then(() => {
+        resolve({ status: true })
       })
     })
   }
