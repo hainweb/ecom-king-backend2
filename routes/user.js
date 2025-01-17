@@ -69,13 +69,19 @@ router.get('/api/login', (req, res) => {
 router.post('/api/login', (req, res) => {
   const { username, password } = req.body;
 
-  // Check if the user is locked out
+  // Check if the lockout period has expired
+  if (req.session.lockedOutUntil && req.session.lockedOutUntil <= Date.now()) {
+    req.session.failedAttempts = 0; // Reset failed attempts after lockout expires
+    req.session.lockedOutUntil = null; // Clear lockout status
+  }
+
+  // Check if the user is currently locked out
   if (req.session.lockedOutUntil && req.session.lockedOutUntil > Date.now()) {
     const timeLeft = Math.ceil((req.session.lockedOutUntil - Date.now()) / 1000); // time left in seconds
     return res.json({ loggedIn: false, timeLeft, message: `Too many failed attempts. Try again in ${timeLeft} seconds.` });
   }
 
-  // Reset failed attempts counter if it's the first attempt or after lockout expires
+  // Ensure failed attempts are initialized
   if (!req.session.failedAttempts) {
     req.session.failedAttempts = 0;
   }
@@ -90,8 +96,8 @@ router.post('/api/login', (req, res) => {
       req.session.failedAttempts += 1; // Increment failed attempts counter
 
       if (req.session.failedAttempts >= 10) {
-        req.session.lockedOutUntil = Date.now() + 1 * 60 * 1000; // Lock the user for 2 minutes
-        res.json({ loggedIn: false, timeLeft: 60, message: 'Too many failed attempts. Please try again in 2 minutes.' });
+        req.session.lockedOutUntil = Date.now() + 2 * 60 * 1000; // Lock the user for 2 minutes
+        res.json({ loggedIn: false, timeLeft: 120, message: 'Too many failed attempts. Please try again in 2 minutes.' });
       } else {
         req.session.loginErr = 'Invalid username or password';
         res.json({ loggedIn: false, message: req.session.loginErr });
