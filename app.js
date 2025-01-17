@@ -48,7 +48,7 @@ const sessionMiddleware = session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: 'mongodb://localhost:27017',
+    mongoUrl: 'mongodb+srv://ajinrajeshhillten:ilzSIoQy0bzlzgF2@cluster0.prb1l.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
     collectionName: 'sessions',
     ttl: 24 * 60 * 60, // Session TTL (1 day)
     autoRemove: 'native',
