@@ -4,12 +4,15 @@ var productHelpers = require('../helpers/product-helpers');
 var userHelpers = require('../helpers/user-helpers');
 const sgMail = require('@sendgrid/mail');
 const crypto = require('crypto');
-
-
-sgMail.setApiKey('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'); // Replace with your SendGrid API key
+require('dotenv').config(); // Ensure this is at the top of your file
 
 
 
+sgMail.setApiKey(process.env.SENDERGRID_API); // Replace with your SendGrid API key to send emails 
+
+
+console.log('SendGrid API Key:', process.env.SENDERGRID_API);
+  
 
 const verifyLogin = (req, res, next) => {
   if (req.session.user && req.session.user.loggedIn) {
@@ -21,11 +24,12 @@ const verifyLogin = (req, res, next) => {
 
 /* GET home page. */
 router.get('/api/products', async function (req, res, next) {
+  
   let user = req.session.user;
   let cartCount = null;
   console.log('session', req.session.user);
   if (user) {
-    console.log('in user');
+    console.log('in user'); 
 
     // Fetch cart count and wishlist 
     cartCount = await userHelpers.getCartCount(req.session.user._id);
@@ -106,7 +110,7 @@ const otpRequestCountStore = {}; // Stores the count of OTP requests
 const otpRequestTimeStore = {};  // Stores the last OTP request time for each user
 
 router.post('/api/forgot-send-otp', (req, res) => {
-  
+
   const { Email, Name, Mobile } = req.body;
 
   console.log('api all to send otp', req.body);
@@ -136,39 +140,39 @@ router.post('/api/forgot-send-otp', (req, res) => {
 
   // Proceed with signup if valid
 
-    
-      // Generate a 6-digit OTP
-      const otp = crypto.randomInt(100000, 999999).toString();
 
-      // Save OTP in the store with a 10-minute expiration
-      otpStore[Email] = { otp, expiresAt: Date.now() + 10 * 60 * 1000 };
+  // Generate a 6-digit OTP
+  const otp = crypto.randomInt(100000, 999999).toString();
 
-      // Increment OTP request count
-      otpRequestCountStore[Email] = otpRequestCount + 1;
+  // Save OTP in the store with a 10-minute expiration
+  otpStore[Email] = { otp, expiresAt: Date.now() + 10 * 60 * 1000 };
 
-      // Save the current time for the OTP request
-      otpRequestTimeStore[Email] = Date.now();
+  // Increment OTP request count
+  otpRequestCountStore[Email] = otpRequestCount + 1;
 
-      // Send OTP using SendGrid
-      const msg = {
-        to: Email,
-        from: 'kingcart.ecom@gmail.com', // Replace with your verified sender email
-        subject: 'Your OTP Code',
-        text: `Hello ${Name},\n\nYour OTP code is ${otp}. This code will expire in 10 minutes.\n\nThank you!`,
-      };
+  // Save the current time for the OTP request
+  otpRequestTimeStore[Email] = Date.now();
 
-      sgMail
-        .send(msg)
-        .then(() => {
-          res.json({ status: true, message: 'OTP sent successfully.' });
-        })
-        .catch((error) => {
-          console.error('Error sending email:');
-          res.json({ status: false, message: 'Failed to send OTP. Please try again.' });
-        });
+  // Send OTP using SendGrid
+  const msg = {
+    to: Email,
+    from: 'kingcart.ecom@gmail.com', // Replace with your verified sender email
+    subject: 'Your OTP Code',
+    text: `Hello ${Name},\n\nYour OTP code is ${otp}. This code will expire in 10 minutes.\n\nThank you!`,
+  };
 
-      
-   
+  sgMail
+    .send(msg)
+    .then(() => {
+      res.json({ status: true, message: 'OTP sent successfully.' });
+    })
+    .catch((error) => {
+      console.error('Error sending email:');
+      res.json({ status: false, message: 'Failed to send OTP. Please try again.' });
+    });
+
+
+
 });
 
 router.post('/api/send-otp', (req, res) => {
@@ -234,7 +238,7 @@ router.post('/api/send-otp', (req, res) => {
           res.json({ status: false, message: 'Failed to send OTP. Please try again.' });
         });
 
-      res.json(response1);
+
     } else {
       res.json(response1);
     }
@@ -266,7 +270,7 @@ router.post('/api/verify-otp', (req, res) => {
     // Block further attempts for 2 minutes after 5 failed attempts
     if (attempts >= 5 && Date.now() - lastAttemptTime < 2 * 60 * 1000) {
       console.log(`Too many failed attempts for ${Email}. Please try again after 2 minutes.`);
-      return res.json({ 
+      return res.json({
         status: false,
         message: 'Too many failed attempts. Please try again after 2 minutes.'
       });
@@ -359,22 +363,22 @@ router.post('/api/signup', (req, res) => {
 
 
 router.post('/api/find-user', (req, res) => {
-console.log('api call to find acc',req.body);
+  console.log('api call to find acc', req.body);
 
-userHelpers.doSignup(req.body,false,true).then((response1) => {
-  console.log('resoponse1', response1)
- 
-  res.json(response1)
+  userHelpers.doSignup(req.body, false, true).then((response1) => {
+    console.log('resoponse1', response1)
 
-});
+    res.json(response1)
+
+  });
 
 })
 
 
-router.post('/api/change-password',(req,res)=>{
-  console.log('Api call to change pss',req.body);
-  
-  userHelpers.changePassword(req.body).then((response)=>{
+router.post('/api/change-password', (req, res) => {
+  console.log('Api call to change pss', req.body);
+
+  userHelpers.changePassword(req.body).then((response) => {
     res.json(response)
   })
 })
