@@ -11,6 +11,7 @@ var app = express();
 var fileUpload = require('express-fileupload');
 var db = require('./config/connection');
 var session = require('express-session'); 
+require('dotenv').config();
 // CORS Middleware should be placed before route definitions 
 app.use(cors({
   origin:['https://ecommerce-king-cart.onrender.com'], // Your frontend URL
