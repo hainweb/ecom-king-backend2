@@ -12,7 +12,7 @@ sgMail.setApiKey(process.env.SENDERGRID_API); // Replace with your SendGrid API 
 
 
 console.log('SendGrid API Key:', process.env.SENDERGRID_API);
-  
+
 
 const verifyLogin = (req, res, next) => {
   if (req.session.user && req.session.user.loggedIn) {
@@ -23,8 +23,37 @@ const verifyLogin = (req, res, next) => {
 };
 
 /* GET home page. */
+
+router.get('/api/home', async function (req, res, next) {
+
+  let user = req.session.user;
+  let cartCount = null;
+  console.log('session homeeeeeee', req.session.user);
+  if (user) {
+    console.log('in user ');
+
+    // Fetch cart count and wishlist 
+    cartCount = await userHelpers.getCartCount(req.session.user._id);
+    let wishlist = await userHelpers.getWishlist(req.session.user._id);
+
+
+    // Render the page with products, user, cartCount, and wishlist status
+
+    res.json({ user, cartCount })
+
+    let updateLastActive = userHelpers.updateLastActive(req.session.user._id)
+    console.log('updated last in router');
+
+  } else {
+    console.log('no user');
+
+    res.json({ status: false, message: 'No user' })
+  }
+});
+
+
 router.get('/api/products', async function (req, res, next) {
-  
+
   let user = req.session.user;
   let cartCount = null;
   console.log('session', req.session.user);
@@ -92,6 +121,11 @@ router.post('/api/login', (req, res) => {
       req.session.failedAttempts = 0; // Reset failed attempts after successful login
       console.log('session', req.session.user);
       res.json({ loggedIn: true, user: req.session.user });
+
+
+      let updateLastActive = userHelpers.updateLastActive(req.session.user._id)
+      console.log('updated last in router');
+
     } else {
       req.session.failedAttempts += 1; // Increment failed attempts counter
 
@@ -105,7 +139,6 @@ router.post('/api/login', (req, res) => {
     }
   });
 });
-
 
 
 const otpStore = {};
@@ -182,7 +215,6 @@ router.post('/api/forgot-send-otp', (req, res) => {
 });
 
 router.post('/api/send-otp', (req, res) => {
-  
   const { Email, Name, Mobile } = req.body;
 
   console.log('api all to send otp', req.body);
@@ -316,7 +348,11 @@ router.post('/api/verify-otp', (req, res) => {
   // If "forgot" flag is true, skip signup and proceed
   if (forgot) {
     console.log('Forgot flag is true. Proceeding with password reset process.');
+
     return res.json({ status: true, message: 'OTP verified. Proceed with password reset.' });
+
+     return res.json({ status: true, message: 'OTP verified. Proceed with password reset.' });
+
   } else {
     // Proceed with signup
     let userData = {
@@ -326,6 +362,11 @@ router.post('/api/verify-otp', (req, res) => {
       Mobile: req.body.Mobile,
       Email: req.body.Email,
       Password: req.body.Password,
+<<<<<<< HEAD
+=======
+      CreatedAt: new Date().toISOString(), // Set the current date and time
+      LastActive: new Date().toISOString()
+>>>>>>> ec2412c (Changed file)
     };
 
     console.log('User data for signup:', userData);
@@ -353,7 +394,7 @@ router.post('/api/verify-otp', (req, res) => {
 
 
 router.post('/api/signup', (req, res) => {
-  console.log('api call signup');
+  console.log('api call signup', req.body);
 
   userHelpers.doSignup(req.body).then((response1) => {
     console.log('resoponse1', response1)
@@ -568,6 +609,8 @@ router.get('/api/get-address', (req, res) => {
 router.post('/api/add-address', (req, res) => {
   console.log('data in add address', req.body);
   let userId = req.session.user._id
+  console.log('sbhdbhdbhbhdbhs', req.session.user._id);
+
   userHelpers.addAddress(userId, req.body).then((response) => {
     res.json(response)
   })
