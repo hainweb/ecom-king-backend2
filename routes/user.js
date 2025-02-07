@@ -362,11 +362,9 @@ router.post('/api/verify-otp', (req, res) => {
       Mobile: req.body.Mobile,
       Email: req.body.Email,
       Password: req.body.Password,
-<<<<<<< HEAD
-=======
       CreatedAt: new Date().toISOString(), // Set the current date and time
       LastActive: new Date().toISOString()
->>>>>>> ec2412c (Changed file)
+
     };
 
     console.log('User data for signup:', userData);
