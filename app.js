@@ -51,7 +51,7 @@ const sessionMiddleware = session({
   store: MongoStore.create({
     mongoUrl: 'mongodb+srv://ajinrajeshhillten:ilzSIoQy0bzlzgF2@cluster0.prb1l.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
     collectionName: 'sessions',
-    ttl: 24 * 60 * 60, // Session TTL (1 day)
+    ttl: 30 * 24 * 60 * 60, // Session TTL (30 day)
     autoRemove: 'native',
     touchAfter: 24 * 3600 // Time period in seconds between session updates
   }),
@@ -59,7 +59,7 @@ const sessionMiddleware = session({
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge:  24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 dqys
   }
 });
 // Add this before your routes
