@@ -560,11 +560,11 @@ return new Promise((resolve,reject)=>{
 
         // Check if the user already has more than 2 addresses
 
-        if (user.Address && user.Address.length >= 2) {
+        if (user.Address && user.Address.length >= 3) {
 
-          console.log('User already has 2 addresses');
+          console.log('User already has 3 addresses');
 
-          return resolve({ status: false, message: 'User already has 2 addresses, cannot add more' });
+          return resolve({ status: false, message: 'User already has 3 addresses, cannot add more' });
 
         }
 
